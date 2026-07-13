@@ -5,7 +5,7 @@ import plotly.express as px
 
 # Load data
 df = pd.read_csv(
-    "D:/new/Desktop/coe/jupyter/internship/End-to-End Sales Forecasting & Demand Intelligence System/train.csv"
+    "train.csv"
 )
 
 df["Order Date"] = pd.to_datetime(
