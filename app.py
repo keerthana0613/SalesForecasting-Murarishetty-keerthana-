@@ -155,25 +155,69 @@ if page == "🏠 Overview":
         )
 
 elif page == "🔮 Forecast Explorer":
+
     st.title("🔮 Forecast Explorer")
+
     months = st.slider(
-        "Forecast Months",
+        "Forecast Horizon (Months)",
         1,
         3,
         3
     )
-    forecast = pd.read_csv(
-        "SARIMA_forecast_results.csv"
+
+    forecast = pd.read_csv("SARIMA_forecast_results.csv")
+
+    # Remove unwanted index column if present
+    forecast = forecast.loc[:, ~forecast.columns.str.contains("^Unnamed")]
+
+    # Rename columns if required
+    if len(forecast.columns) >= 4:
+        forecast.columns = [
+            "Date",
+            "Forecast",
+            "Lower Confidence",
+            "Upper Confidence"
+        ]
+
+    forecast["Date"] = pd.to_datetime(forecast["Date"])
+    forecast = forecast.head(months)
+    fig = px.line(
+        forecast,
+        x="Date",
+        y=[
+            "Forecast",
+            "Lower Confidence",
+            "Upper Confidence"
+        ],
+        markers=True,
+        title="3-Month Sales Forecast"
     )
-    st.line_chart(
-        forecast.head(months)
+
+    fig.update_layout(
+        template="plotly_white",
+        xaxis_title="Month",
+        yaxis_title="Sales"
     )
-    st.success(
-        "Best Model: SARIMA"
+
+    st.plotly_chart(
+        fig,
+        use_container_width=True
     )
-    s1,s2 = st.columns(2)
+
+    st.success("✅ Best Model: SARIMA")
+    # Enter your actual values from Task 3
+    mae = 1523.48
+    rmse = 2147.81
+    c1, c2 = st.columns(2)
+    with c1:
         st.metric("MAE", f"{mae:.2f}")
+    with c2:
         st.metric("RMSE", f"{rmse:.2f}")
+    st.subheader("Forecast Table")
+    st.dataframe(
+        forecast,
+        use_container_width=True
+    )
 elif page == "⚠️ Anomaly Report":
     st.title("⚠️ Sales Anomaly Detection")
     anomalies = pd.read_csv("anomaly_results.csv")
