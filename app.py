@@ -174,11 +174,11 @@ elif page == "🔮 Forecast Explorer":
     c1,c2 = st.columns(2)
     c1.metric(
         "MAE",
-        "Your Task 3 MAE"
+        st.metric("MAE", f"{mae:.2f}")
     )
     c2.metric(
         "RMSE",
-        "Your Task 3 RMSE"
+        st.metric("RMSE", f"{rmse:.2f}")
     )
 elif page == "⚠️ Anomaly Report":
     st.title("⚠️ Sales Anomaly Detection")
