@@ -2,41 +2,68 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-
-# Load data
-df = pd.read_csv(
-    "train.csv"
+st.set_page_config(
+    page_title="Sales Intelligence Dashboard",
+    page_icon="📊",
+    layout="wide"
 )
+st.markdown("""
+<style>
+.main {
+    background-color: #f5f7fb;
+}
+h1 {
+    color: #1f4e79;
+}
+h2 {
+    color: #1f4e79;
+}
+[data-testid="stMetric"] {
+    background-color: white;
+    border-radius: 15px;
+    padding: 15px;
+    box-shadow: 0px 3px 10px rgba(0,0,0,0.1);
+}
 
+.stButton button {
+    background-color: #1f77b4;
+    color: white;
+    border-radius: 10px;
+}
+
+</style>
+""", unsafe_allow_html=True)
+df = pd.read_csv("train.csv")
 df["Order Date"] = pd.to_datetime(
     df["Order Date"],
     format="%d/%m/%Y"
 )
 
-
-# Sidebar
-st.sidebar.title("Sales Analytics Dashboard")
-
-page = st.sidebar.selectbox(
-    "Select Page",
+st.sidebar.title("📊 Sales Intelligence")
+page = st.sidebar.radio(
+    "Navigate",
     [
-        "Sales Overview",
-        "Forecast Explorer",
-        "Anomaly Report",
-        "Product Demand Segments"
+        "🏠 Overview",
+        "🔮 Forecast Explorer",
+        "⚠️ Anomaly Report",
+        "📦 Product Segments"
     ]
 )
 
+if page == "🏠 Overview":
+    st.title("📈 Sales Overview Dashboard")
 
-# ==========================
-# PAGE 1: SALES OVERVIEW
-# ==========================
+    total_sales = df["Sales"].sum()
+    total_orders = df["Order ID"].nunique()
+    categories = df["Category"].nunique()
+    regions = df["Region"].nunique()
 
-if page == "Sales Overview":
+    c1,c2,c3,c4 = st.columns(4)
+    c1.metric("💰 Total Sales",f"{total_sales:,.0f}")
+    c2.metric("🛒 Orders",total_orders)
+    c3.metric("📂 Categories",categories)
+    c4.metric("🌎 Regions",regions)
 
-    st.title("Sales Overview Dashboard")
-
-    # Yearly sales
     yearly = (
         df.groupby(
             df["Order Date"].dt.year
@@ -49,16 +76,16 @@ if page == "Sales Overview":
         yearly,
         x="Order Date",
         y="Sales",
-        title="Total Sales by Year"
+        title="Yearly Sales",
+        text_auto=True
     )
 
     st.plotly_chart(
         fig,
-        key="yearly_sales_chart"
+        use_container_width=True,
+        key="year"
     )
 
-
-    # Monthly sales trend
     monthly = (
         df.groupby(
             pd.Grouper(
@@ -75,180 +102,119 @@ if page == "Sales Overview":
         monthly,
         x="Order Date",
         y="Sales",
-        title="Monthly Sales Trend"
+        title="Monthly Sales Trend",
+        markers=True
     )
+
 
     st.plotly_chart(
         fig2,
-        key="monthly_sales_chart"
+        use_container_width=True,
+        key="month"
     )
+    col1,col2 = st.columns(2)
+    with col1:
 
+        region_sales = (
+            df.groupby("Region")
+            ["Sales"]
+            .sum()
+            .reset_index()
+        )
 
-    # Filters
-    region = st.selectbox(
-        "Select Region",
-        df["Region"].unique()
-    )
+        fig3 = px.pie(
+            region_sales,
+            names="Region",
+            values="Sales",
+            title="Sales by Region"
+        )
 
-    category = st.selectbox(
-        "Select Category",
-        df["Category"].unique()
-    )
+        st.plotly_chart(
+            fig3,
+            use_container_width=True,
+            key="region"
+        )
 
+    with col2:
+        cat_sales = (
+            df.groupby("Category")
+            ["Sales"]
+            .sum()
+            .reset_index()
+        )
+        fig4 = px.pie(
+            cat_sales,
+            names="Category",
+            values="Sales",
+            title="Sales by Category"
+        )
+        st.plotly_chart(
+            fig4,
+            use_container_width=True,
+            key="category"
+        )
 
-    filtered = df[
-        (df["Region"] == region) &
-        (df["Category"] == category)
-    ]
-
-    st.write(
-        "Sales:",
-        filtered["Sales"].sum()
-    )
-
-
-
-# ==========================
-# PAGE 2: FORECAST EXPLORER
-# ==========================
-
-elif page == "Forecast Explorer":
-
-    st.title("Forecast Explorer")
-
-    option = st.selectbox(
-        "Select Forecast Type",
-        ["Category", "Region"]
-    )
-
-
+elif page == "🔮 Forecast Explorer":
+    st.title("🔮 Forecast Explorer")
     months = st.slider(
-        "Forecast Horizon",
+        "Forecast Months",
         1,
         3,
         3
     )
-
-
     forecast = pd.read_csv(
         "SARIMA_forecast_results.csv"
     )
-
-
     st.line_chart(
         forecast.head(months)
     )
-
-
-    st.subheader(
-        "Model Performance"
+    st.success(
+        "Best Model: SARIMA"
     )
-
-    st.write(
-        "MAE: Add your Task 3 MAE value"
+    c1,c2 = st.columns(2)
+    c1.metric(
+        "MAE",
+        "Your Task 3 MAE"
     )
-
-    st.write(
-        "RMSE: Add your Task 3 RMSE value"
+    c2.metric(
+        "RMSE",
+        "Your Task 3 RMSE"
     )
-
-
-
-# ==========================
-# PAGE 3: ANOMALY REPORT
-# ==========================
-
-elif page == "Anomaly Report":
-
-    st.title(
-        "Sales Anomaly Report"
-    )
-
-
-    anomalies = pd.read_csv(
-        "anomaly_results.csv"
-    )
-
-
-    anomalies["Order Date"] = pd.to_datetime(
-        anomalies["Order Date"]
-    )
-
-
+elif page == "⚠️ Anomaly Report":
+    st.title("⚠️ Sales Anomaly Detection")
+    anomalies = pd.read_csv("anomaly_results.csv")
+    anomalies["Order Date"] = pd.to_datetime(anomalies["Order Date"])
     fig = px.scatter(
         anomalies,
         x="Order Date",
         y="Sales",
+        color="Isolation_Result",
         title="Detected Sales Anomalies"
     )
-
-
     st.plotly_chart(
         fig,
-        key="anomaly_chart"
+        use_container_width=True,
+        key="anomaly"
     )
+    st.dataframe(anomalies)
 
-
-    st.subheader(
-        "Anomaly Dates"
+elif page == "📦 Product Segments":
+    st.title("📦 Product Demand Segmentation")
+    clusters = pd.read_csv("cluster_results.csv")
+    fig = px.scatter(
+        clusters,
+        x="PCA1",
+        y="PCA2",
+        color="Demand_Group",
+        hover_name="Sub-Category",
+        title="Product Demand Clusters"
     )
-
-    st.dataframe(
-        anomalies
+    st.plotly_chart(
+        fig,
+        use_container_width=True,
+        key="clusters"
     )
-
-
-
-# ==========================
-# PAGE 4: PRODUCT SEGMENTS
-# ==========================
-
-elif page == "Product Demand Segments":
-
-    st.title(
-        "Product Demand Segmentation"
-    )
-
-
-    clusters = pd.read_csv(
-        "cluster_results.csv"
-    )
-
-
-    st.dataframe(
-        clusters.head()
-    )
-
-
-    if "PCA1" in clusters.columns and "PCA2" in clusters.columns:
-
-        fig = px.scatter(
-            clusters,
-            x="PCA1",
-            y="PCA2",
-            color="Demand_Group",
-            hover_name="Sub-Category",
-            title="Product Clusters"
-        )
-
-
-        st.plotly_chart(
-            fig,
-            key="cluster_chart"
-        )
-
-    else:
-
-        st.error(
-            "PCA1 and PCA2 columns are missing in cluster_results.csv"
-        )
-
-
-    st.subheader(
-        "Sub-category Cluster Table"
-    )
-
-
+    st.subheader("Sub-category Groups")
     st.dataframe(
         clusters[
             [
