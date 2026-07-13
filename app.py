@@ -171,15 +171,9 @@ elif page == "🔮 Forecast Explorer":
     st.success(
         "Best Model: SARIMA"
     )
-    c1,c2 = st.columns(2)
-    c1.metric(
-        "MAE",
+    s1,s2 = st.columns(2)
         st.metric("MAE", f"{mae:.2f}")
-    )
-    c2.metric(
-        "RMSE",
         st.metric("RMSE", f"{rmse:.2f}")
-    )
 elif page == "⚠️ Anomaly Report":
     st.title("⚠️ Sales Anomaly Detection")
     anomalies = pd.read_csv("anomaly_results.csv")
